@@ -1,0 +1,56 @@
+!obj:pylearn2.train.Train {
+    dataset: &train !obj:pylearn2.datasets.csv_dataset.CSVDataset {
+        path: %(path)s
+    },
+    model: !obj:pylearn2.models.mlp.MLP {
+        layers: [
+                 !obj:pylearn2.models.mlp.RectifiedLinear {
+                     layer_name: 'h0',
+                     dim: %(dim_h0)i,
+                     sparse_init: 15
+                 },
+                 !obj:pylearn2.models.mlp.Linear {
+                     layer_name: 'y',
+                     irange: 0.5,
+                     dim: 1
+                 }
+                ],
+        nvis: 20,
+    },
+    algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
+        batch_size: 10,
+        learning_rate: .001,
+        learning_rule: !obj:pylearn2.training_algorithms.learning_rule.Momentum {
+            init_momentum: .01
+        },
+        monitoring_dataset:
+            {
+                'train' : *train,
+                'test'  : !obj:pylearn2.datasets.csv_dataset.CSVDataset {
+                                path: %(testPath)s
+                            },
+            },
+        termination_criterion: !obj:pylearn2.termination_criteria.EpochCounter {
+            max_epochs: 80
+        },
+        cost: !obj:pylearn2.costs.cost.SumOfCosts { costs: [
+            !obj:pylearn2.costs.mlp.Default {
+            },
+            !obj:pylearn2.costs.mlp.L1WeightDecay {
+                coeffs:  [ .0005, .0005 ] 
+            },
+            !obj:pylearn2.costs.mlp.WeightDecay {
+                coeffs:  [ .0005, .0005 ] 
+            }
+            ]
+        }
+    },
+    extensions: [
+        !obj:pylearn2.train_extensions.best_params.MonitorBasedSaveBest {
+            channel_name: "train_y_mean_x_mean_u",
+            save_path: "best.pkl"
+        }
+    ],
+    save_path: "softmax_regression.pkl",
+    save_freq: 1
+}
