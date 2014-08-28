@@ -1,0 +1,47 @@
+!obj:pylearn2.train.Train {
+    dataset: &train !obj:pylearn2.datasets.csv_dataset.CSVDataset {
+        path: 'train.csv'
+    },
+    model: !obj:pylearn2.models.mlp.MLP {
+        layers: [
+                 !obj:pylearn2.models.mlp.RectifiedLinear {
+                     layer_name: 'h0',
+                     dim: 150,
+                     sparse_init: 1,
+                     use_bias: True
+                 },
+                 !obj:pylearn2.models.mlp.Linear {
+                     layer_name: 'y',
+                     sparse_init: 1,
+                     dim: 1
+                 }
+                ],
+        nvis: 25,
+    },
+    algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
+        batch_size: 10,
+        learning_rate: .003,
+        learning_rule: !obj:pylearn2.training_algorithms.learning_rule.Momentum {
+            init_momentum: .05
+        },
+        monitoring_dataset:
+            {
+                'train' : *train,
+                'valid' : !obj:pylearn2.datasets.csv_dataset.CSVDataset {
+                                path: 'valid.csv'
+                            },
+            },
+        termination_criterion: !obj:pylearn2.termination_criteria.EpochCounter {
+            max_epochs: 140
+        }
+    },
+    extensions: [
+        !obj:pylearn2.train_extensions.best_params.MonitorBasedSaveBest {
+            channel_name: "valid_objective",
+            save_path: "best.pkl"
+        }
+    ],
+    save_path: "softmax_regression.pkl",
+    save_freq: 1
+}
+

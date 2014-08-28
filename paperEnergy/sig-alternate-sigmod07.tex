@@ -363,7 +363,7 @@ where the error function $p$ is symmetric and continuous, $r_i = Y_i - \hat{Y_i}
 
 Using the notations defined above, the most used cost function is based on the Mean Squared Error (MSE), commonly known in data modelling as Least Mean Squares (LMS) method. The basic idea of LMS is to optimize the fit of a model with respect to the training data by minimizing the square of residuals
 \begin{displaymath}p(r)= \frac{1}{2}r^2\end{displaymath}
-but it is greatly influenced by outliers \cite{liano1996robust}. In order to control the damage caused by outliers, in this paper the Least Mean Log Squares (LMLS) method presented by \cite{liano1996robust} is used. It is defined in (\cref{eq:LMLS}).
+but it is greatly influenced by outliers \cite{liano1996robust}. In order to control the damage caused by outliers, in this paper the Least Mean Log Squares (LMLS) method  (\cref{eq:LMLS}), presented by \cite{liano1996robust} is used. The ANN will try to minimize the Mean Log Squared Error (MLSE). 
 \begin{equation}
 p(r) = \log(1 + \frac{1}{2}r^2)
 \label{eq:LMLS}
@@ -488,18 +488,18 @@ All these problems will be immediately reported to the company.
 \label{fig:zigzag}
 \end{figure}
 
-An ANN with the standard cost function MSE was also trained, apparently resulting in a smaller RMSE error in a faster way (\cref{tab:ANNresults}). Although this can be true, the Hybrid LMLS model was more precise, detecting better the possible outliers. They contributed the most to the error.
+An ANN with the standard cost function MSE was also trained, apparently resulting in a smaller RMSE error in a faster way (\cref{tab:ANNresults}). Although this can be true, the Hybrid MLSE model was more precise, detecting better the possible outliers. They contributed the most to the error.
 
 \begin{table}
 \centering
-\caption{Best selected results to compare the ARIMA, ANN and hybrid model. HyMSE is the Hybrid model with MSE cost function, while HyLMLS is the same model with LMLS cost function.}
+\caption{Best selected results to compare the ARIMA, ANN and hybrid model. HyMSE is the Hybrid model with MSE cost function, while HyMLSE is the same model with MLSE cost function.}
 \label{tab:ANNresults}
 \begin{tabular}{llllll} \hline
 Model			& neurons & epochs \tablefootnote{epochs to converge} & RMSE & MAPE & MAE \\ \hline
 ARIMA\tablefootnote{Calculated iteratively as described in \cref{sec:predictor}}			& - & - & 88.50 & 117.27  & 22.52  \\ 
 ANN 				& 80 & 15 & 11.95 & 34.78  & 8.52 \\ 
 HyMSE			& 80 &  70 & 9.4 & 27.66 & 6.90 \\ 
-HyLMLS			& 150 & 140 & 10.02 & 30.05 & 7.26 \\ 
+HyMLSE			& 150 & 140 & 10.02 & 30.05 & 7.26 \\ 
 \hline
 \end{tabular}
 \end{table}
