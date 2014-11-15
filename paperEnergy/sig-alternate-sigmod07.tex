@@ -52,7 +52,7 @@
 
 \usepackage{hyperref}
 \usepackage{cleveref}
-
+\usepackage{enumitem}
 
 \begin{document}
 %
@@ -87,7 +87,7 @@
 Marco De Nadai\\
        \affaddr{Universita' degli studi di Trento}\\
       \affaddr{Master's student}\\
-       \email{marco.denadai@studenti.unitn.it}
+       \email{me@marcodena.it}
 % 2nd. author
 \alignauthor
 Maarten van Someren\\ 
@@ -99,9 +99,9 @@ Maarten van Someren\\
 \maketitle
 \begin{abstract}
 
-The focus of this paper is on building a robust outlier detection system, which relies on a hybrid Artificial Neural Network (ANN) and an Auto-regressive Integrated Moving Average (ARIMA) model. ARIMA is usually suitable for linear prediction and ANNs are suitable for non-linear prediction. It is proved that together they can model the complex non-linear relationship between weather forecast variables and the gas consumption. The system labels outliers, which can be reported to the building manager. He can further analyse and fix the HVAC system minimizing in this way the energy waste. 
-The system is composed by 2-phase process where in the first one the short-term (hourly) gas consumption is forecast thanks to a historical time-series, and in the second phase outliers are detected on the basis of deviations from expected (or forecast) value. 
-Outliers are detected without the necessity of possessing the previously labelled examples, thanks to a very precise forecast with a RMSE error from $8$ $m^3$ to $2.5$ $m^3$.
+The focus of this paper is on predicting and finding anomalies on gas consumption that can successively be reported to the building managers who can identify wasteful apparatus and fix them.  Even if predicting future consumption is very useful, the existing approaches separate it from the outlier detection task, typically identifying them with the Gaussian error theory. Moreover, previous examples of outliers (or cleaned data) are usually required.
+
+In this work a 2-phase system is presented, where the first one forecasts the short-term (hourly) gas consumption, where the second phase detects outliers on the base of deviations from expected (forecast) value. Outliers are detected without possessing previously labelled examples, thanks to a very precise forecast with a RMSE error between $8$ $m^3$ and $2.5$ $m^3$. 
 
 \end{abstract}
 
@@ -109,134 +109,94 @@ Outliers are detected without the necessity of possessing the previously labelle
 
 \section{Introduction}
 
-Energy consumption in buildings is one of the fastest growing sectors. Approximately $41\%$ of the total energy in Europe is consumed by buildings (households and services) \cite{Eurostat2013}. Studies and states' directives about minimizing energy consumption and using renewable energy increased steadily with the reduction of fossil fuels, the border frictions with eastern countries like Russia, and the increase of various environmental problems. With this in mind, the European union, with a recent directive \cite{Directive2009}, has the target to raise EU energy consumption produced from renewable resources to $20\%$, to reduce by $20\%$ the EU greenhouse gas emissions and to improve by $20\%$ the EU's energy efficiency. This means investments to re-qualify old buildings, new country laws, energy diagnosis, but also new efficiency systems from the used appliances.
+Energy consumption in buildings is one of the fastest growing sectors. Approximately $41\%$ of the total energy in Europe is consumed by buildings (households and services) \cite{Eurostat2013}. Studies and states' directives about minimizing energy consumption and using renewable energy steadily increased with the reduction of fossil fuels, the border frictions with eastern countries like Russia, and the increase of various environmental problems. Under those circumstances, the European union, with a recent directive \cite{Directive2009}, has set the target to raise EU energy consumption produced from renewable resources to $20\%$, to reduce by $20\%$ the EU greenhouse gas emissions and to improve by $20\%$ the EU's energy efficiency. This means investments to re-qualify old buildings, new energy regulations and diagnosis, but also new efficiency systems for appliances.
 
-Forecasting energy demands has become one of the major research field in the energy departments because it can help gas utilities but also companies and families. Gas utilities buy gas from pipeline companies on a daily bases, so they need to know the needs in advance to be competitive.  Companies and families have the aim of reducing the energy consumption and increase efficiency. \\
-Lately, big companies like Google also have shown their interest in this new market, developing thermostats which automatically control the house climate basing the decisions on the schedule of the users. Nest, a company acquired by Google, declared that customers saved the 11.3\% of AC-related energy usage without compromising comfort \cite{GoogleNest2}, thanks to the automatic learning implemented in their thermostats. If on one hand the automatic thermostat program setting based on the people behaviour, can help them to save money, anomaly detection can decrease even more the energy consumption. It is showed by \cite{katipamula2005review} and \cite{wu2011cross}, that commercial buildings consume from $15\%$ to $30\%$ more energy than necessary due to poorly maintained, degraded, and improperly controlled equipment. These anomalies can become easy fixable problems with a reliable fault detection and diagnosis (FDD) system. 
+Forecasting energy demands has become one of the major research field in the energy departments because it helps gas utilities, but also industries and families. Gas utilities buy gas from pipeline companies on a daily bases, consequently they need to know the needs in advance to be competitive. Similarly, Companies and families have the aim of reducing the energy consumption and increase efficiency. \\
+Lately, big companies like Google have shown their interest in this new market, developing thermostats which automatically control the house climate basing the decisions on users' schedule. Nest, a company acquired by Google, declared that thanks to its automatically learning thermostat, customers saved 11.3\% of AC-related energy usage without compromising comfort \cite{GoogleNest2}. Learning people behaviour can save a lot of money but system anomalies still raise and spoil the saving effort. It is showed \cite{katipamula2005review, wu2011cross} that commercial buildings consume from $15\%$ to $30\%$ more energy than necessary due to poorly maintained, degraded, and improperly controlled equipment. These anomalies can become easy fixable problems with a reliable fault detection and diagnosis (FDD) system. 
 
-In this paper an automatic outlier detection system is proposed, where days/hours with abnormally high and low gas consumption are labelled and reported to the building manager. He can further analyse and fix the HVAC system minimizing the energy waste caused by the outliers. Gas consumption is very irregular and not easily predictable with classic methods. The outlier detection system presented, is based on predictions made by a hybrid ARIMA-ANN, which can model linear and non-linear behaviour of the data with very reliable results, and a comparison between the predicted value/trend and the actual one to find outliers. 
-
-Since the definition of outlier is highly application-dependent, in \cref{sec:background} they are defined. In the same section, ANNs and ARIMA are briefly explained because they will be lately used in the proposed solution (\cref{sec:proposedSolution}), based on a gas consumption forecaster. In \cref{sec:related} some related works are discussed. In \cref{sec:experimental}, some experiments on synthetic and real data are showed. \cref{sec:future} presents some future ideas for the readers, based on techniques that the author didn't have the time to apply.
+Gas consumption is very irregular and not easily predictable with classic methods. The outlier detection system presented is based on predictions made by a hybrid ARIMA-ANN which can model linear and non-linear behaviour of the data with very reliable results. Outliers are identified on the basis of deviations from forecast value. Thanks to this system days/hours with abnormally consumption can be reported to the building manager, who can further analyse and fix the HVAC system minimizing energy waste caused by the outliers.
 
 
-\section{Background}
-\label{sec:background}
+
+%\label{sec:background} trovare referenze
 
 \subsection{What is an outlier}
-An outlier, by definition \cite{hawkins1980identification}, is an observation which deviates significantly from other observations so that it creates suspicion that it was created by different dynamics. Despite this general definition, the more appropriate way of defining outliers is highly application-dependent, because even same scenarios may require different determinations of outliers. \\
-In this paper, outliers are very closed related to the problem of time-series forecasting, since outliers are declared on the basis of deviations from expected (or forecast) value. In this context a value is considered as outlier because of its relationship to its related data (\emph{contextual} outlier \cite{aggarwal2013outlier} or conditional anomalies \cite{song2007conditional}). A sudden peak (\cref{fig:outlierTypes}) in a time-series is a \emph{contextual} outlier because its value is very different from the values of its adjacent items.\\
-When a group of points are declared outliers, it is referred as \emph{collective} anomaly or outlier \cite{aggarwal2013outlier}. It first appear at a point and then it affects the values immediately next to it. After a while, this effect dies out, leaving the time-series to the normal behaviour. This scenario is usually challenging to detect.
-
- Outliers can have distinct main reasons: 
-\begin{enumerate}
+An outlier (or anomaly) by definition \cite{hawkins1980identification} \emph{is an observation which deviates significantly from other observations so that it creates suspicion that it was created by different dynamics}. Despite this general definition, the more appropriate way of defining outliers is highly application-dependent, because even same scenarios may require different determinations of outliers. \\
+In this paper, outliers are very closely related to the time-series forecasting problem, since outliers are declared on the basis of deviations from expected (forecast) value. Outliers can have distinct main reasons: 
+\begin{itemize}
+\itemsep0em
   \item Defective system (e.g. a defective heater in a room).
   \item Bad human behaviour (e.g. people who leave open the window in a room while the system is trying to heat it).
   \item Defective monitoring system, where the system monitors different values from the real one, due to a malfunction, computing process errors or a recording negligence. 
-\end{enumerate}
-
-In literature, outliers are also referred to as abnormalities, deviants, novelties or anomalies.
+\end{itemize}
+Another important aspect to consider is the nature of an anomaly. Anomalies can be classified in three categories \cite{chandola2009anomaly}:\begin{description}[font=\normalfont\itshape,leftmargin=1pc]
+\itemsep0em
+  \item[Point Anomalies] If an individual data-point is considered anomalous with respect to the rest of the data.
+  \item[Contextual Anomalies] If a data-point is anomalous in a specific context, but not otherwise. For example in Holland 35 degrees of temperature might be normal during summer but not during the winter.
+  \item[Collective Anomalies] If a group of points is anomalous with respect to the entire data set. Collective Anomalies firstly appear at a point affecting the values immediately next to it. After a while, this effect dies out, leaving the time-series to its normal behaviour.
+\end{description}
 
 \begin{figure}[h!]
 \centering
 \epsfig{file=images/outlierTypes.eps, width=\columnwidth}
-\caption{Different types of outliers. On the left an unusual data point is presented, on the right an unusual pattern of changes can be recognized if compared to the other days shape.}
+\caption{Different types of outliers}
 \label{fig:outlierTypes}
 \end{figure}
 
 
-\subsection{Artificial Neural Networks}
-Artificial Neural Networks (ANNs) were originally developed to mimic the brain functionality. There is not a widely accepted definition but by \cite{bishop1995neural}: ''A neural network is a circuit composed of a very large number of simple processing elements that are neurally based. Each element operates only on local information. Furthermore each element operates asynchronously; thus there is no overall system clock. '' 
-From \cref{fig:ANN}, it is possible to see a fully connected ANN with five inputs, 3 neurons on the hidden layer (so called because the ANN is like a black-box) and one output. The inputs are also called features and they represent the characteristics to describe the output. The hidden neurons will map this relation. Each connection has an activation which represents the importance (weight) of the connected neuron. ANNs with at least 1-hidden layer can map non-linear relations.
+\subsection{Organization}
 
-The hidden neurons are usually represented with logistic sigmoid units, which internally calculates the sigmoid function of the inputs, but also with hyperbolic tangent. Recent findings argued that rectifier units seems to be more biologically plausible \cite{glorot2011deep} and they also seem to perform better in ANNs. 
-\begin{figure}[h!]
-\label{fig:ANN}
-\centering
-\epsfig{file=NN2.eps, width=\columnwidth}
-\caption{Artificial neural network with \emph{Backpropagation}. Example with 5 inputs, 3 hidden neuron in the first hidden layer, and one output (in the case of this paper, the gas consumption value).}
-\end{figure}
-
-The ANNs are commonly applied with the \emph{Stochastic Gradient Descent} algorithm, which tries to find the right weights of each connections to have the right output value. It is usually combined with the \emph{Backpropagation} algorithm which calculates the error in the output layer and then back-propagates it to the previous layers in order to adjust the weights \cite{rumelhart1985learning}. More information can be found in \cite{bishop2006pattern}.
-
-Nowadays, ANNs are the state of the art technique of many applications.
-
-
-\subsection{Autoregressive models}
-Let $X_1, X_2, \ldots X_t$ be the values in an univariate time-series. In the \emph{Auto-Regressive Moving Average} model, the value of $X_t$ is defined in terms of the values of the last window of length $p$ and $q$ moving average terms.
-\begin{displaymath}X_t =  \sum_{i=1}^p \varphi_i X_{t-i} + \sum_{i=1}^q \theta_i \varepsilon_{t-i} + c + \varepsilon_t.\end{displaymath}
-The left-hand part is called auto-regressive part, because it depends on the previous (lagged) values $X_{t-1}, X_{t-2}, \ldots X_{t-p}$, the right-hand part is called moving average because the error at time $t$ is the linear combination of the previous errors $\varepsilon_{t-1}, \varepsilon_{t-2}, \ldots, \varepsilon_{t-q}$. \\
-These methods are applied to \emph{stationary} time-series, so called when the mean, variance and autocorrelation structure do not change over time. Sadly, many time-series have seasonal effects or trends. In particular, random walks,
-which characterise many types of series, are non-stationary. Differencing the data-points can often transform a non-stationary time-series into a stationary one. Based on the Box-Jenkins models of the $1970s$, ARIMA models differentiate where series with deterministic trends should be differenced first, then an ARMA model applied. ARIMA models are usually mentioned as ARIMA(p, d, q), to show the ARMA parameters and the $d$ order of difference.ARIMA models are also capable of modelling a wide range of seasonal data. 
-\begin{displaymath}
-\operatorname{ARIMA}(p,d,q) (P,D,Q)_m
-\end{displaymath}
-where $m$ is the number of periods per season. The upper-case notation is used for the seasonal parts of the model, and the lower-case notation for the non-seasonal parts of the model.
-
-The choice of the parameters $p$, $d$, $q$ is highly application dependent and it relies on theory that is beyond the scope of this paper. More information can be found in \cite{rousseeuw2005robust}.
+This paper is organized as follows. In \cref{sec:related} the major related works are explained and divided in \emph{supervised}, \emph{semi-supervised} and \emph{unsupervised} methods. In \cref{sec:proposedSolution} the solution proposed in this work is presented, describing also the possessed experimental data. Since this work uses Artificial Neural Networks and Auto-regressive methods, in the same section these are briefly explained, along with the gas forecaster. Finally, in \cref{sec:outlierDetection} the outlier detection procedure is explained. In \cref{sec:experimental} the system is completely evaluated. \cref{sec:future} presents some future ideas for the readers, based on techniques that the author didn't have the time to apply. Finally, in \cref{sec:conclusion} the conclusions are presented.
 
 
 \section{Related work}
 \label{sec:related}
- Since in this paper outliers are declared on the basis of deviations from expected (or forecast) value, this section is divided in related work in forecasting and outlier detection.
+Outlier detection system finds extensive use in a wide variety of applications such as fraud detection for credit cards, intrusion detection for cyber-security, performance analysis and fault detection in firms. Outlier detection can be \emph{supervised}, \emph{semi-supervised}, \emph{unsupervised} and since the anomaly definition is highly application dependent, in this section only the energy consumption field methods will be reviewed.
 
 
-\subsection{Outlier detection}
-Outlier detection system is a wide area from introduction detection systems to fraud detection systems, from law enforcement systems to earth science anomaly detection systems.\\
-Outlier detection can be supervised, when available data is labelled indicating previously known examples of anomalies, semi-supervised, where only example of normal data or anomalies are available, or unsupervised, where previous examples of interesting anomalies are not available. Typically most of the unsupervised outlier mechanisms use a measure of \emph{outlierness} of a data point, such as sparsity of underlying region, nearest neighbour distance or the fit to underlying distribution \cite{aggarwal2013outlier}. In these cases a data-point is unusual due to one or more variables rather than a specific one (like in the supervised methods).
-
-In energy consumption outlier detections, literature is usually based on the Gaussian error theory, stating that when the measurement accord with normal distribution, the probability that the residual falls in three times the variance is more than $99.7\%$. Therefore the residuals falling outside it, can be considered outliers. 
-In \cite{ferdowsi2013neural} the author further improved this system considering a rolling window median which seems to improve the results when the distribution is not fixed. Supervised methods are usually based on classifications using trees, ANNs and other different algorithms, thanks to the possession of previous examples of anomalies. In energy consumption field unsupervised methods are usually based clustering, where an algorithm tries to find similarities between points/trends and cluster them into groups, calculating the distance between them. A cluster is considered good when the intra-cluster distance is minimized and the intra-cluster distance is maximized. Popular methods in this group are $k$-means, one-class SVM and self-organizing maps. \\
-For example in \cite{khan2013fault} some clustering methods, like CART, $k$-means and DBScan, were applied to detect outliers in the office lighting energy consumption. The author showed different techniques applied with the Generalized Extreme Studentized Deviate (GESD) and listed some irregularities found. He also stated that the clustering methods were not able to detect faults strongly related to time variable.
-
-Clustering methods are very difficult to apply in time-series data and the results are not usually excellent. For this reason in this paper a prediction algorithm will be built, where outliers are declared on the basis of deviations from expected (or forecast) value. The more the predictor will be accurate, the more it will detect abnormal data points.
+\subsection{Supervised anomaly detection}
+Techniques trained in supervised mode assume the presence of labelled training data, indicating previously known examples of anomalies. There are many algorithms in this category, but all of them rely on the classification of the points in outliers or normal data. To cite some of them, in \cite{house1999classification} ANNs and Nearest neighbour classifiers are compared, while a Bayes classifier is used for fault detection. In \cite{hippert2001neural} over 20 papers of ANN classifiers were compared.
 
 
-\subsection{Forecasting}
-Traditionally, several techniques have been used for energy use forecasting, but it is needed to differentiate between short-term, medium-term and long-term energy forecasting. The former usually refers to prediction with a horizon of hours or days, the second refers to weeks, the latter refers to monthly or annual horizon. Long-term forecasting usually deals with data that rarely presents significant distortions and irregularities, so they have a small effect on the overall value. On the contrary, short-term forecasting has to deal with irregularities and sudden changes of the values (due to weather changes, human behaviour, etc.). 
+\subsection{Semi-supervised anomaly detection}
+Semi-supervised models are characterized by having a training set where there are only examples for normal data. There are no so many examples of this category in the energy field. In \cite{fujimaki2005approach} this model is applied for spacecrafts fault detection. 
 
-There are essentially five types of prediction models \cite{zhao2012review}: Engineering methods, Statistical methods, Artificial Neural networks, Support Vector Machines and Grey models. Engineering methods use physical principles to calculate thermal dynamics and energy behaviour of the building, Statistical methods build empirical models to apply a regression to time series of values, Neural networks try to predict energy using an artificial intelligence network of interconnected neurons, Support vector machines are based in a machine learning algorithm and Grey models apply a mixture of the models. All the principal methods are extensively reviewed in \cite{zhao2012review} and \cite{hippert2001neural}. 
 
-Several techniques have been traditionally applied for energy use forecasting, and among the statistical methods Kalman filtering and ARIMA/ARMAX time-series techniques are the most famous. 
+\subsection{Unsupervised anomaly detection}
+\label{sec:unsupervised}
+Unsupervised methods have no training data nor anomalies labelling. Typically most of the unsupervised outlier mechanisms use a measure of \emph{outlierness} of a data point, such as sparsity of underlying region, nearest neighbour distance or the fit to underlying distribution \cite{aggarwal2013outlier}. In these cases a data-point is unusual due to one or more variables rather than a specific one (like in the supervised methods). Literature (in the energy field) is usually based on the \emph{Gaussian error} theory. This suppose that the measurement follows the normal distribution, and outliers are the points falling outside three times the variance. One example above all is \cite{ferdowsi2013neural}, who uses and improves this method to identify outliers with a rolling median window.
+Unsupervised methods are usually based clustering, where an algorithm tries to find similarities between points/trends and cluster them into groups, calculating the distance between them. A cluster is considered good when the intra-cluster distance is minimized and the intra-cluster distance is maximized. Popular methods in this group are $k$-means, one-class SVM and self-organizing maps. For example in \cite{khan2013fault} some clustering methods, like CART, $k$-means and DBScan, were applied to detect outliers in the office lighting energy consumption. The author showed different techniques applied along with the Generalized Extreme Studentized Deviate (GESD) and listed some irregularities found. He also stated that clustering methods were not able to detect faults strongly related to time variable. 
 
-The first reports about applications of Artificial Neural Networks (ANNs) were published in the early 1990's \cite{czernichow1996short}. Since then the number of publications increased steadily. Kalogirou et la. \cite{kalogirou2006artificial} used back propagation neural networks to predict the required heating load of 225 buildings, Ekici and Aksoy used the same model t predict building heating loads in three-buildings. Nizami and Al-Garni \cite{JaveedNizami19951097} tried a simple feed-foward NN and related the electric energy consumption to weather data and population, Taylor and Buizza \cite{taylor2002neural} used an ANN with weather data (51 variables) to predict load of 10 days ahead. Gonzales \cite{gonzalez2005prediction} built an ANN to predict hourly energy consumption.
-Some researchers tried to specialize the ANNs: Neto and Fiorelli \cite{neto2008comparison} compared generic ANNs with working days ANNs and week-end ANNs, Lazzerini and Rosario \cite{d2012neural} specialized them to predict electric lighting with weather data. 
+%da rimpinzare
 
-Some researchers tried also to apply a hybrid model to increase the performance of the ANN. One example above all is \cite{zhang2003time} which applied a hybrid ARIMA and neural network model to forecast electricity use, another one is \cite{khashei2010artificial} who improved the previous one. This paper is based also on his work.
 
-Until now only electric forecasting was presented, because the majority of the existing forecasters are related to electric forecasting. There are only few of them are about natural gas forecasting: Brown et al.\cite{brown1995development} built one of the first predictor for natural gas consumption and Khotanzad et al \cite{khotanzad2000combination} developed a two stage system ANN with very good results.
 
-Even if ANNs might outperform traditional methods, the researchers are not still convinced about the results of the ANNs in this field. Nevertheless it is also stated that ``a significant portion of the ANN research in forecasting and prediction, lacks validity" \cite{adya1998ective} and that most of the papers seems misspecified models that had been incompletely tested (no standard benchmarks, no synthetic data, etc.) \cite{hippert2001neural}. This paper will try to avoid these mistakes.
-
-It needs also to be pointed that ANNs are \emph{multi-step ahead} forecasters, while Auto-Regressive methods are potentially useless in long ahead data-points.
 
 
 \section{Proposed solution}
-\label{sec:proposedSolution}
+\label{sec:proposedSolution} 
 
-As stated before, in this paper an regression algorithm is proposed where outliers are declared on the basis of deviations from expected (or forecast) value.
+The available dataset does not indicate if any instance is \emph{normal} or \emph{anomalous}, and labelling the dataset would be prohibitively expensive. For this reason an unsupervised method (\cref{sec:unsupervised}) needs to be applied. Clustering methods are very difficult to be applied in time-series (\cref{eq:timeseries}) data with decent results. The solution would be to apply a Gaussian error method, instead this project wants to be more exhaustive, and develop a new method which also provide a energy use forecast, useful for future building plans. In this work outliers are declared on the basis of deviations from expected (forecast) value.
 
-A time-series is a sequence of data-points typically measured at successive points of a uniform time interval $t$ (\cref{eq:timeseries}).
+A time-series is a sequence of data-points typically measured at successive points of a uniform time interval $t$.
 \begin{equation}\label{eq:timeseries}\left\{x(t_0), x(t_1), \ldots x(t_i), x(t_{i+1}) \ldots \right\}\end{equation}
-where $x$ is the value and $t$ the time.
-
-Time-series forecasting is about predicting future values given past data (\cref{eq:forecast}). 
+where $x$ is the value and $t$ the time. Time-series forecasting is about predicting future values given past data (\cref{eq:forecast}). 
 \begin{equation}\label{eq:forecast}\hat{x}(t+s) = f\left(x(t), x(t-1) \ldots \right) \end{equation}
 where $s$ is the step size. A \emph{multivariate} time-series is a $(n\times1)$ vector of $n$ time-series variables.
 
-It can be seen that in academic and industry research, linear regression-based systems are the standard ``de facto" of energy forecasting and in recent works this problem is treated by combining weather forecast data. However, this relationship is clearly non-linear \cite{hippert2001neural}. Consequently, even if some papers have acceptable results with measured datasets, these systems cannot adequately capture the relationship in all the situations and data. Since ANNs are the state of the art technique of many machine learning problems where there are complex non-linear hypothesis, the proposed solution is composed by a \textit{multilayer feed-foward} neural network with \textit{backpropagation}. 
+It can be seen that in academic and industry research, linear regression-based systems represent the standard ``de facto" of energy forecasting. These techniques are usually applied to electric consumption, which is much more easily predictable than the gas one. Moreover, they have been applied in short-term forecast, since Auto-regressive methods are potentially useless in long ahead data-points. In recent works auto/linear regressive methods were also combined weather forecast data with energy use, but this relationship is clearly non-linear \cite{hippert2001neural}. Consequently, even if some papers have acceptable results with measured datasets, these systems cannot adequately capture the relationship in all the situations and data.
+
+Since ANNs are the state of the art technique of many machine learning problems where there are complex non-linear hypothesis, the proposed solution is based on them. Reviews of ANNs based forecasting system have concluded that they are promising but ``a significant portion of the ANN research in forecasting and prediction, lacks validity". Much work (as this one) needs to be done before they are accepted as forecasters. 
+
+Zhang et al \cite{zhang1998forecasting} stated that ANN models really have advantages in dealing with a large amount of historical load data with non-linear characteristic, but they neglected the linear relations including the data. For this reason a hybrid approach is proposed, where the ANN is helped in linear forecasting by the popular method ARIMA (auto-regressive integrated moving averages), commonly known as the Box–Jenkins approach. 
+
 
 
 \subsection{Experimental data}
-The energy consumption datasets used are collected by Ebatech in different buildings of the Hogeschool van Amsterdam. The Universiteit van Amsterdam provided these datasets to this project. These buildings are located in Amsterdam, the capital city of The Netherlands. This city has a maritime climate similar to England, strongly influenced by the North Sea. Winters are fairly cold and summers are rarely hot for the european standards. Amsterdam is characterized by the common presence of rain and wind and the weather conditions vary frequently.\\
-Ebatech collected different types of features in each buildings, with different granularity. For this project three buildings are used: \textit{HvA 740 - NTH}, \textit{Hva 882 - WBW} and \textit{Hva 761 - KMH}. In these buildings the company collected the energy consumptions, the gas consumptions as other variables. It needs to be noted that gas is used only to heat the buildings.
+The energy consumption datasets used were collected by Ebatech in various buildings of the Hogeschool van Amsterdam and provided by Universiteit van Amsterdam. The buildings are located in Amsterdam, the capital city of The Netherlands. This city has a maritime climate similar to England, strongly influenced by the North Sea. Winters are fairly cold and summers are rarely hot for the European standards. Amsterdam is characterized by the common presence of rain and wind and the weather conditions vary frequently.\\
+Ebatech collected different features in each building, with different granularity. This project used three buildings where the features overlapped (see \cref{tab:dataset}). All these buildings were heated only by gas, which was used only for this purpose.
 
-The weather data was collected by KNMI\footnote{Koninklijk Nederlands Meteorologisch Instituut http://www.knmi.nl} in Schipol, the Amsterdam airport 16 km far from the tested buildings. The dataset, findable in the website, consists in over 21 variables hourly collected. The proposed solution only uses few of them, as explained in the \cref{sec:predictor}, and they are used as forecast values: the measured weather conditions are linked to the previous hour of energy consumptions. It is necessary to consider that there will be an error in the built model, since the weather data is collected in a different location from the buildings positions and in practice the error will be larger than those obtained in this simulation, due to the effect of the weather forecast uncertainty \cite{douglas1998impacts, ranaweera1996effect}. The advice is to keep it in mind before applying the methods contained in this paper with days forecasting.
-
-
-\subsubsection{Data analysis}
-\label{sec:dataAnalysis}
-
-The energy consumption dataset covers a very large period ranging more than 5 years, allowing to see similar patterns even with different yearly/seasons behaviour (one year could be different from another one for external factors like weather or building use). It is very rich (with more than 50 variables) but also sparse because the monitored variables are not the same in all the buildings. For this reason only the common variables like the total electric and gas consumption were used for this paper. In this way it is possible to generalize and compare the model. 
+The weather data was collected by KNMI\footnote{Koninklijk Nederlands Meteorologisch Instituut http://www.knmi.nl} in Schipol, the Amsterdam airport 16 km far from the tested buildings. The dataset, findable in their website, consists in over 21 variables hourly collected. The proposed solution only uses few of them, as explained in the \cref{sec:predictor}, and the measured weather conditions at time $t$ are used at time $t-1$ as simulated forecast conditions. It is necessary to note that this will introduce an error in the final model, due to the effect of the weather forecast uncertainty \cite{douglas1998impacts, ranaweera1996effect}. Another error is caused by using the conditions collected in a different location from the buildings positions.
 
 \begin{table}
 \centering
@@ -250,8 +210,16 @@ Hva 882 - WBW& 01/2008 - 03/2014 & $54.647$\\ \hline
 \caption{Buildings used.}
 \end{table}
 
-The gas consumption data is highly seasonal: daily and weekly cycles are quite perceptible, as it can be seen from \cref{fig:monthlyTGas} and \cref{fig:dailyBehaviour}. From the latter the weekly behaviour is clear: the last two days of the week (Saturday and Sunday) are completely different from the others and Monday seems a bit different from the rest of the days. Everyday, around 4:00-5:00 AM, the system seems to react turning on the heating system, where in the previous hours of the night it seems only keeping a minimum temperature. The system reveals us that after a couple of hours, it decreases the consumption again.
-In \cref{fig:monthlyTGas} the Temperature has a clear daily/hourly relation with the gas consumption while in \cref{fig:monthlyGasElectr} the electric consumption is shown to be very smoothed and more regular than the gas one.
+
+
+\subsubsection{Data analysis}
+\label{sec:dataAnalysis}
+
+The energy consumption dataset covers a very large period ranging more than 5 years, allowing to see similar patterns even with different yearly/seasonal behaviour (one year could be different from another one for external factors like weather or building use). The dataset is very rich (with more than 50 variables) but also sparse because the monitored variables are not the same in all the buildings.
+
+The gas consumption data is highly seasonal: daily and weekly cycles are quite perceptible, as it can be seen from \cref{fig:monthlyTGas} and \cref{fig:dailyBehaviour}. From the latter the weekly behaviour is clear: the last two days of the week (Saturday and Sunday) are completely different from the others. Moreover Monday seems a bit different from the rest of the days. The system reveals us that after a couple of hours, it decreases the consumption again. Furthermore, around 4:00-5:00 AM the system seems to react turning on the heating system, where in the previous hours of the night it seems only keeping a minimum temperature. 
+
+\cref{fig:monthlyTGas} shows that the temperature has a clear daily/hourly relation with the gas consumption, while in \cref{fig:monthlyGasElectr} the electric consumption is shown to be very smoothed and more regular than the gas one.
 
 
 \begin{figure}[h!]
@@ -264,7 +232,7 @@ In \cref{fig:monthlyTGas} the Temperature has a clear daily/hourly relation with
 \begin{figure}[h!]
 \centering
 \epsfig{file=images/monthlyTGas.eps, width=\columnwidth}
-\caption{Typical monthly gas consumption behaviour in building 740-NTH and its relation with the temperatureon building 740-NTH.}
+\caption{Typical monthly gas consumption behaviour in building 740-NTH and its relation with the temperature in building 740-NTH.}
 \label{fig:monthlyTGas}
 \end{figure}
 
@@ -276,36 +244,99 @@ In \cref{fig:monthlyTGas} the Temperature has a clear daily/hourly relation with
 \end{figure}
 
 
-\subsubsection{Data cleaning}
+
+\subsubsection{Data preparation}
 \label{sec:cleaning}
-The data was presenting some irregularities like repeated and missing data-points. Although the first one may not influence the performance of the ANN, it could lead to problems when other algorithms are used (like ARIMA in this paper). Repeated data-points were deleted keeping only the last one, while missing data-points were reconstructed by linear interpolation. Cubic and spline interpolation were also considered but the performance was heavily affected by these methods.
+The data presented some irregularities like repeated and missing data-points. Repeated data-points were deleted, while missing data-points were reconstructed by linear interpolation because they could cause problems to ARIMA. Cubic and spline interpolation were also considered but the performance was heavily affected by these methods.
+%\vfill
 
-Missing and repeated data-points represent some problems on the data collection that will be further investigated.
-\vfill
 
-\subsection{Artificial neural network forecaster}
+\subsection{Background}
+
+
+\subsubsection{Artificial Neural Networks}
+Artificial Neural Networks (ANNs) were originally developed to mimic the brain functionality. The complexity of a brain neuron is abstracted by artificial neurons, also called units. These consist of \emph{weighted inputs} computed by a mathematical function which determines the \emph{activation} of a neuron. The \emph{output} is the result of this function. Neuron activations are usually represented with linear, hyperbolic tangent or sigmoid function. Recent findings argued that Rectifier units seems to be more biologically plausible \cite{glorot2011deep}.
+
+The most famous architecture is the one showed in \cref{fig:ANN}. Neurons are usually organized in layers, where the layer between input and output is called \emph{hidden}. Neurons are usually fully connected with the neurons of the next layer. Learning is done by the Stochastic Gradient Descent (SGD) algorithm, which tries to find the best weight configuration to optimize the output (reducing a cost/error function). It is usually combined with the \emph{Backpropagation} algorithm, which back-propagates the output error to the inner levels.
+
+More information about ANNs can be found in \cite{bishop2006pattern}.
+
+\begin{figure}[h!]
+\centering
+\epsfig{file=NN2.eps, width=\columnwidth}
+\caption{ANN with \emph{Backpropagation}, 5 inputs, 3 hidden neuron in the hidden layer, and one output (in this paper, the gas consumption value).}
+\label{fig:ANN}
+\end{figure}
+
+
+\subsubsection{Auto-regressive models}
+Let $X_1, X_2, \ldots X_t$ be the values in an univariate time-series. In the \emph{Auto-Regressive Moving Average} (ARMA) model, the value of $X_t$ is defined in terms of the values in the last windows of length $p$ and $q$ moving average terms.
+\begin{displaymath}X_t =  \sum_{i=1}^p \varphi_i X_{t-i} + \sum_{i=1}^q \theta_i \varepsilon_{t-i} + c + \varepsilon_t.\end{displaymath}
+The left-hand part is called auto-regressive part, because it depends on the previous (lagged) values $X_{t-1}, X_{t-2}, \ldots X_{t-p}$, the right-hand part is called moving average because the error at time $t$ is the linear combination of the previous errors $\varepsilon_{t-1}, \varepsilon_{t-2}, \ldots, \varepsilon_{t-q}$. \\
+These methods are applied to \emph{stationary} time-series, so called when the mean, variance and autocorrelation structure do not change over time. However many time-series have seasonal effects or trends. In particular, random walks,
+which characterise many types of series, are non-stationary. Differencing the data-points can often transform a non-stationary time-series into a \emph{stationary} one. Based on the Box-Jenkins models of the $1970s$, ARIMA models differentiate series with deterministic trends if necessary, then applies an ARMA model. ARIMA models are usually mentioned as ARIMA(p, d, q), to show the ARMA parameters and the $d$ order of difference. ARIMA models are also capable of modelling a wide range of seasonal data. 
+\begin{displaymath}
+\operatorname{ARIMA}(p,d,q) (P,D,Q)_m
+\end{displaymath}
+where $m$ is the number of periods per season. The upper-case notation $(P,D,Q)$ is used for the seasonal parts of the model, and the lower-case notation for the non-seasonal parts of the model.
+
+The choice of the parameters $p$, $d$, $q$ is highly application dependent and it relies on theory that is beyond the scope of this paper. More information can be found in \cite{rousseeuw2005robust}.
+
+
+\subsection{Artificial Neural Network forecast}
 \label{sec:predictor}
+Since \cref{sec:related} is focused on outliers detection works, the next subsection will try to review energy consumption forecast. After this, the features and the ANN architecture are described.
+
+
+\subsubsection{Related work}
+Gas forecasting is divided in three macro categories and each of them have their own techniques: short-term, medium-term and long-term forecasting. The first one has to deal with irregularities and sudden changes of the values because it usually refers to prediction with a horizon of hours or days, the second refers to weeks. Long-term forecasting usually deals with data that rarely presents significant distortions and irregularities, so they have a small effect on the overall value. It usually refers to monthly or annual horizon. 
+There are essentially four types of prediction models, extensively reviewed in \cite{zhao2012review} and \cite{hippert2001neural}: \begin{description}[font=\normalfont\itshape,leftmargin=1pc]
+\itemsep0em
+  \item[Engineering methods] use physical principles to calculate thermal dynamics and energy behaviour of the building.
+  \item[Statistical methods] build empirical models to apply a regression to time series of values.
+  \item[Machine learning methods] based on ANNs and Support Vector Machines (SVMs) that try to predict energy usage with a learning algorithm.
+\item[Grey models] apply a mixture of the models. 
+\end{description}
+
+
+
+
+\cite{kalogirou2006artificial} used a \emph{back-propagated} ANN to predict the required heating load of 225 buildings, Ekici and Aksoy used the same model to predict building heating loads in three-buildings. Nizami and Al-Garni \cite{JaveedNizami19951097} tried a simple \emph{feed-foward} ANN to relate the electric energy consumption to weather data and population, Taylor and Buizza \cite{taylor2002neural} used weather data (51 variables) to predict the 10 days ahead electric load. Gonzales \cite{gonzalez2005prediction} predicted hourly electric consumption.
+Some researchers tried to specialize the ANNs: Neto and Fiorelli \cite{neto2008comparison} compared generic ANNs with working days ANNs and week-end ANNs, Lazzerini and Rosario \cite{d2012neural} specialized them to predict electric lighting with weather data. %verificare d2012neural e riscrivere
+
+Other researchers tried also to apply a hybrid model to increase the ANNs performance. One example above all is \cite{zhang2003time} which applied a hybrid ARIMA and an ANN model to forecast electricity use, another one is \cite{khashei2010artificial} who improved the previous one. This paper is based also on his work.
+
+As can be seen the focus of the majority of research is on electric forecasting. There are only few of them are about natural gas forecasting: Brown et al.\cite{brown1995development} built one of the first predictor for natural gas consumption and Khotanzad et al \cite{khotanzad2000combination} developed a two stage system ANN with very good results. 
+
+Finally \cite{hippert2001neural} reviewed many ANN based electric forecasting systems and concluded that most of the papers seems misspecified models that had been incompletely tested (no standard benchmarks, no synthetic data, etc.). This work will try to give the readers the most exhaustive and proved work in this field. 
+
+
+
+
+\subsubsection{Feature engineering}
+
+\emph{Feature Engineering} is the process of transforming the raw data that better represent the underlying problem, and result in a better model performance. This process was done almost iteratively, cumulatively introducing, analysing, comparing and removing features from the model.
 
 Time-series are characterized by more or less complex dependencies:
-\begin{description}
+\begin{description}[font=\normalfont\itshape,leftmargin=1pc]
 \itemsep0em
   \item[Known] dependencies like date-time dependencies.
   \item[Hidden] dependencies like the behaviour of the HVAC system (when it starts, when it raises the temperature etc).
   \item[Short/long-term] dependencies between variables.
 \end{description}
-Data scientist and experts are focused in known dependencies while the proposed ANNs will be focused on the hidden ones.
-The short/long-term dependency is realized by a moving window containing a ``memory" of the previous states for the interesting variables, using a \emph{Tapped delay line memory} \cite{mozer2007neural}. These memories form a new set of states \begin{displaymath}\left\{\bar{x}_1(t), \bar{x}_2(t), \ldots \bar{x}_n(t)\right\}\end{displaymath} from the original states \begin{displaymath}\left\{x(1), x(2) \ldots x(n)\right\}\end{displaymath}where $\bar{x}_i(t) = x(t - i + 1)$. The window types will be explained later in this section. 
+Data scientist and experts are focused in known dependencies while the proposed ANN is focused on the hidden ones.
+The short/long-term dependency was represented by a moving window containing a ``memory" of the previous states for some interesting variables. These memories formed a new set of states \begin{displaymath}\left\{\bar{x}_1(t), \bar{x}_2(t), \ldots \bar{x}_n(t)\right\}\end{displaymath} from the original states \begin{displaymath}\left\{x(1), x(2) \ldots x(n)\right\}\end{displaymath} where $\bar{x}_i(t) = x(t - i + 1)$. The memorized variables are listed later in this section. 
 
-Since the value to predict is time dependent, the first element to consider is adding the time feature. Energy consumption depends on the hour of the day but also on the day of the week and the seasonality of the year (month and day of the year) (as explained in \cref{sec:dataAnalysis}, \cref{fig:monthlyTGas} and \cref{fig:dailyBehaviour}). The day of the week is a number from $0$ to $6$, where $0$ is Monday and 6 is Sunday. Since the behaviour of the holidays were considered similar to the weekends (particularly similar to Sundays), a function encoded all the holidays as weekend days\footnote{Thanks to an Open source Dutch week-end list \url{https://github.com/PanderMusubi/dutch-holidays}}. In the future this can be improved asking a time-table list for the buildings, indicating when these are closed. The day of the year is a number between $0$ and $366$, where the first one is the first of January. All these date-time features by means of their sine and cosine values as usual reported in literature \cite{ohlsson1994predicting, dodier2004statistical, gonzalez2005prediction}. This transform the time component in a cyclic feature that spans a fixed length (a single day for the hour) and it is bounded in $[-1,1]$.
+Since the value to predict is time dependent, the first feature was time. Energy consumption depends on the hour of the day but also on the day of the week and the seasonality of the year (month and day of the year) (as explained in \cref{sec:dataAnalysis}, \cref{fig:monthlyTGas} and \cref{fig:dailyBehaviour}). The weekday was represented as a number from $0$ to $6$, where $0$ is Monday and 6 is Sunday. Since the behaviour of the holidays were considered similar to the weekends (particularly similar to Sundays), a function encoded all the holidays as weekend days. The day of the year, a number between $1$ and $366$, was added as well. All these date-time features are encoded by means of their sine and cosine values as usual reported in literature \cite{ohlsson1994predicting, dodier2004statistical, gonzalez2005prediction}. This transformed the time component in a cyclic feature that spans a fixed length (a single day for the hour) and it is bounded in $[-1,1]$.
 
-Another added feature was the current system load, which is the energy consumption at the $k$ state when the load at $k+1$ needs to be predicted. This was believed to be an important measure to find the building usage and the holidays.
+Another added feature was the current system load, which is the energy consumption at the $k$ state when the load at $k+1$ needs to be predicted.
 
-There are many factors that affect the energy needs of buildings. These factors can be divided in three main groups namely the \emph{physical environmental}, the \emph{artificial designing parameters} and the \emph{human thermal discomfort}. The first is composed of weather related parameters like outdoor temperature, wind speed, solar radiation, etc. The \emph{artificial designing parameters} are related to the building construction: transparency ratio, orientation, etc \cite{ekici2009prediction}, but these variables were unavailable in the dataset. The \emph{human sensation of thermal discomfort} is correlated not only to the temperature, but also to other variables such as relative humidity, irradiation and wind speed. Even if all these data was available, the only significant weather variables found, were the temperature and the wind speed.
+There are many factors that affect the energy needs of buildings. They can be divided in three main groups namely \emph{physical environmental}, \emph{artificial designing parameters} and \emph{human thermal discomfort}. The first one is composed of weather related parameters like outdoor temperature, wind speed, solar radiation, etc. The \emph{artificial designing parameters} are related to the building construction: transparency ratio, orientation, etc \cite{ekici2009prediction}, unfortunately these variables were not available in the dataset. The \emph{human sensation of thermal discomfort} is correlated not only to the temperature, but also to other variables such as relative humidity, irradiation and wind speed. Even if they were available in the dataset, only the temperature and the wind speed were found to be significant.
 
 The system consumption was believed to be related to the difference of the outdoor temperature between two instants (\cref{eq:differenceT}), representing a positive/negative change of the external environmental conditions.
-\begin{equation}\Delta T_{k+1}=T_{k+1} - T_{k}\label{eq:differenceT}\end{equation} where $T_{k+1}$ is the predicted temperature for the period $k+1$ and $T_k$ is the value measured in the instant $k$. It needs to be noted that the real behaviour of the system was unknown, so it was not possible to know if this change would have an immediate effect on the HVAC system and/or its reaction time.
+\begin{equation}\Delta T_{k+1}=T_{k+1} - T_{k}\label{eq:differenceT}\end{equation} where $T_{k+1}$ is the predicted temperature for the period $k+1$ and $T_k$ is the value measured in the instant $k$. It needs to be noted that the real behaviour of the system was unknown, consequently it was not possible to know if this change would have an immediate effect on the HVAC system and/or its reaction time.
 
-Gas usage has a daily cycle but there are also secondary weekly and annual cycles that the ANN may not be able to capture. Gas usage $u(t)$ is defined as \begin{displaymath}u(t) = s(t) + f(t) + r(t)\end{displaymath} where $s(t)$ is the seasonality at time $t$, $f(t)$ is the trend and $r(t)$ is called \emph{remainder}, irregular component or difference. The time-series was analysed by the STL decomposition by LOESS \cite{cleveland1990stl}(\cref{fig:STL}), which decomposes a time series into seasonal, trend and irregular components by an additive method. Since the ANN is interested in the \emph{remainder} and the trend can be found from the historical part, the daily, weekly and yearly remainders were added as feature. For the same reason also the Temperature, the wind speed and the electric consumption was decomposed by the STL decomposition, resulting in stationary time-series added in the input.
+Gas usage has a clear daily cycle but there also a weekly and annual cycle that the ANN may not be able to capture. Gas usage $u(t)$ is defined as \begin{displaymath}u(t) = s(t) + f(t) + r(t)\end{displaymath} where $s(t)$ is the seasonality at time $t$, $f(t)$ is the trend and $r(t)$ is called \emph{remainder}. The time-series was analysed by the STL decomposition by LOESS \cite{cleveland1990stl}(\cref{fig:STL}), which decomposes a time-series into seasonal, trend and irregular components by an additive method. Since the ANN is interested in the \emph{remainder} the daily, weekly and yearly remainders were added as feature. For the same reason the temperature, the wind speed and the electric consumption was decomposed by the STL method, resulting in stationary time-series added as feature.
 
 \begin{figure}
 \centering
@@ -314,15 +345,14 @@ Gas usage has a daily cycle but there are also secondary weekly and annual cycle
 \label{fig:STL}
 \end{figure}
 
-In Zhang et al \cite{zhang1998forecasting} it is stated that ANNs models really have advantages while dealing with a large amount of historical load data with non-linear characteristic, but the researchers neglected the linear relations including the data. For this reason a hybrid approach is proposed, where the ANN will be helped in linear forecasting by the popular method ARIMA (auto-regressive integrated moving averages), commonly known as the Box–Jenkins approach. In order to apply ARIMA, the time-series was processed iteratively with a moving window of $21$ days where the ARIMA model was fitted. After the fitting it was forecasting the values of the next $24$ hours, before moving the window and doing the same for the day after. The seasonal ARIMA fitting was done by the help of the Forecast R package \cite{hyndman2007automatic} and its \emph{auto.arima} method, which finds the best ARIMA $(p,d,q) (P,D,Q)_m$ parameters by comparing the \emph{Akaike information criterion} (AIC) of the tested models. Just for the sake of the reader curiosity, the most fitted model was ARIMA $(3,0,3) (2,0,1)_{24}$. An ARIMA model with temperature dummy variables was tested, but it was not helping further the ANN: the simplest models was preferred.
+Moreover, the time-series was processed iteratively with a $21$ days long moving window to fit an ARIMA model. After this, the fitted model was able to forecast the next $24$ values (the gas consumption of the following day). The seasonal ARIMA fitting was finding best ARIMA $(p,d,q) (P,D,Q)_m$ parameters by comparing the \emph{Akaike information criterion} (AIC) of the tested models. Just for the sake of the reader curiosity, the most fitted model was ARIMA $(3,0,3) (2,0,1)_{24}$.
 
-Taking into account the points made in this section, the ANN is predicting the gas consumption ``seeing" without knowing its shape, and its behaviour in the previous hours/days. This limit is surpassed by some rolling windows, which will somehow simulate the Recurrent neural networks behaviour. Two rolling windows were created for the gas consumption, memorizing the sum and the peak load of the previous five hours, and two moving rolling windows were created for the STL yearly residuals, memorizing sum and peak of them.
+As previously stated, the ANN needed to model the time-series time dependency, consequently some moving windows could help the model knowing the shape of the time-series. This somehow simulated the Recurrent Neural Networks (RNNs) behaviour. Two moving windows were created for the gas consumption, and other two were created for the STL yearly residuals, memorizing sum and peak values of the previous 5 hours.
 
-All the features that were not between the limits $[-1,1]$ were scaled to have a faster convergence \cite{lecun2012efficient} of the \emph{Stochastic Gradient Descent} (\cref{eq:scaled}).
+All the features that were not between the limits $[-1,1]$ were scaled (\cref{eq:scaled}) to have a faster convergence \cite{lecun2012efficient} of the \emph{Stochastic Gradient Descent}.
 \begin{equation}\label{eq:scaled}
-x'_i=\frac{x_i -  \frac{max(x) + min(x)}{2}}{ \frac{max(x) - min(x)}{2}}\end{equation} where $x_i$ is the original value and $x'_i$ is the scaled one. Many practical tricks like the shuffling of the elements, the normalization and initialization were taken from \cite{lecun2012efficient, bottou2012stochastic}.
+x'_i=\frac{x_i -  \frac{max(x) + min(x)}{2}}{ \frac{max(x) - min(x)}{2}}\end{equation} where $x_i$ is the original value and $x'_i$ is the scaled one. Many practical tricks like element shuffling, the normalization and initialization were taken from \cite{lecun2012efficient, bottou2012stochastic}.
 
-All the process described so far is also called \emph{feature engineering} and was done almost iteratively, cumulatively introducing and removing features from the model and comparing the performance.
 
 \begin{table}
 \centering
@@ -357,24 +387,24 @@ ARIMA sum$'$		& $\sum_{i=1}^{5} \operatorname{ARIMA}(t-i)$ \\
 \caption{ANN features.}
 \end{table}
 
-Choosing number of hidden units for the ANN is always a tricky task. As stated by \cite{lawrence1998size, sarle1995stopped}, using \emph{early stopping} in a oversized \emph{Backpropagation} ANN, where the number of hidden neurons is higher than the number of the features, makes easier to find global optimum and avoid bad local optima. For this reason the number of hidden units was chosen to be greater than $2\times |features|$ and then test-driven and the training was early stopped to prevent \emph{overfitting}.
 
 
 \subsubsection{Architecture}
 
-ANNs are trained trying to minimize a cost function of the form
+ANNs were trained trying to minimize a cost function of the form
 \begin{displaymath}E= \frac{1}{N}\sum_{i=1}^np(r_i)^2\end{displaymath}
-where the error function $p$ is symmetric and continuous, $r_i = Y_i - \hat{Y_i}$ is the residual between the actual value and the forecast one, and $N$ is the number of training patterns.
+where $p$ the cost function is symmetric and continuous, $r_i = Y_i - \hat{Y_i}$ is the residual between the actual value and the forecast one, and $N$ is the number of training patterns.
 
-Using the notations defined above, the most used cost function is based on the Mean Squared Error (MSE), commonly known in data modelling as Least Mean Squares (LMS) method. The basic idea of LMS is to optimize the fit of a model with respect to the training data by minimizing the square of residuals
+The most used cost function is based on the Mean Squared Error (MSE), commonly known in data modelling as Least Mean Squares (LMS) method. The basic idea of LMS is to optimize the fit of a model with respect to the training data by minimizing the square of residuals
 \begin{displaymath}p(r)= \frac{1}{2}r^2\end{displaymath}
-but it is greatly influenced by outliers \cite{liano1996robust}. In order to control the damage caused by outliers, in this paper the Least Mean Log Squares (LMLS) method  (\cref{eq:LMLS}), presented by \cite{liano1996robust} is used. The ANN will try to minimize the Mean Log Squared Error (MLSE). 
+but it is greatly influenced by outliers \cite{liano1996robust}. For this reason, the ANN was instead focused to minimize the Mean Log Squared Error (MLSE). This is based on the Least Mean Log Squares (LMLS) method  (\cref{eq:LMLS}), presented by \cite{liano1996robust}.
+
 \begin{equation}
 p(r) = \log(1 + \frac{1}{2}r^2)
 \label{eq:LMLS}
 \end{equation}
 
-The ANN is a 1-hidden-layer \emph{Multilayer Feedfoward} ANN with a feedback structure, called \textit{Backpropagation}. This ANN is composed by \emph{Rectifier} neurons and one output linear node. Training is done by the \emph{Stochastic Gradient Descent} algorithm with $10$ batch size and is characterized by a learning rate of $0.003$ and fixed by a Momentum of $0.05$, which could help to increase the speed, avoiding local minima.
+The applied ANN was a 1-hidden-layer \emph{Multilayer Feedfoward} ANN with a feedback structure, called \textit{Backpropagation}. Choosing the number of hidden units for the ANN is always a tricky task because it might lead to \emph{overfitting}. As stated by \cite{lawrence1998size, sarle1995stopped}, using \emph{early stopping} in a oversized \emph{Backpropagation} ANN, where the number of hidden neurons is higher than the number of the features, makes easier to find global optimum and it avoids bad local optima. For this reason the number of hidden units was chosen to be greater than $2\times |features|$ and then test-driven and the training was early stopped to prevent \emph{overfitting}. The ANN was composed by \emph{Rectifier} units and one output linear node. Training was done by the \emph{Stochastic Gradient Descent} algorithm with $10$ batch size and was characterized by a learning rate of $0.003$ and fixed by a Momentum of $0.05$, which could help to increase the speed, avoiding local minima.
 
 \begin{figure}
 \centering
@@ -382,11 +412,13 @@ The ANN is a 1-hidden-layer \emph{Multilayer Feedfoward} ANN with a feedback str
 \caption{Training curve of the hybrid model with 80 hidden neurons}
 \end{figure}
 
-This project used Python and \emph{pandas} for the data analysis, \emph{Pylearn2} \cite{goodfellow2013pylearn2} to construct and test the ANN and the R system with the \emph{zoo} \cite{zeileis2005zoo} and the \emph{Forecast} \cite{hyndman2007automatic} packages for the ARIMA process. 
+This project used Python and \emph{pandas} for the data analysis, \emph{Pylearn2} \cite{goodfellow2013pylearn2} to construct and test the ANN. The \emph{Forecast} \cite{hyndman2007automatic} R package was used for the ARIMA forecast. 
+
 
 
 
 \subsection{Outlier detection}
+\label{sec:outlierDetection}
 
 According to Chebschev's theorem \cite{amidan2005data}, almost all the observations in a data set of system states falls into the interval $[\mu - 3\sigma, \mu+3\sigma]$, where $\mu$ and $\sigma$ are respectively the mean and standard deviation of the data set, and the data points outside this interval are declared outliers. In this paper the ANN is used to predict the gas consumption, for this reason a point will be considered outlier if it will fall outside the $95\%$ confidence interval\footnote{For the following description user \textit{fabee} of \emph{CrossValidated} needs to be mentioned: \url{http://tinyurl.com/l9gvz65}. } expressed for the RMSE. If it is assumed that the difference between the actual values $x_i$ and the predicted value $\hat{x_i}$ have:
 \begin{equation}
@@ -414,11 +446,12 @@ Therefore
 \end{equation}
 
 
+
 \section{Experimental Evaluation}
 \label{sec:experimental}
-The ANN has been trained with early stopping, with a fixed number of training epochs (phases) or stopping the training when the validation error rate was increasing. All the results showed are obtained from a k-fold cross-validation techniques, where the network was trained $k$ times, each time leaving out a subset of data from training in order to test the ANN. The results of the $k$ tests, were divided by $k$. The network is always trained with $70\%$ of the data, $15\%$ is used for validation and the other $15\%$ for testing.
+The ANN has been trained with \emph{early stopping}, with a fixed number of training epochs (phases). All the results showed are obtained from a k-fold \emph{Cross-Validation} technique, where the network was trained $k$ times, each time leaving out a subset of data from training in order to test the ANN. The results of the $k$ tests, were divided by $k$. The network was always trained with $70\%$ of the data, $15\%$ was used for validation and the other $15\%$ to test.
 
-Although most the Mean Absolute Percentage Error (MAPE) is considered a standard for examining the quality of the models prediction of energy load, it is an adequate error measure only if the loss function were linear and recent studies demonstrated it is not \cite{kalogirou2006artificial}\cite{kajl2000evaluation}. Moreover the percentage error is infinite if there are zero values on the series, frequent in intermittent data and in consumption data, and it puts a heavier penalty on positive errors than on negative errors \cite{hyndman2006another}. Because of these disadvantages, this paper will only consider the minimization of the Root Mean Square Error (RMSE), which penalize large errors, as suggested in \cite{yao2005method}. As suggested in \cite{hippert2001neural}, for every experiment also the Mean Absolute Error (MAE) will be calculated. 
+Although the Mean Absolute Percentage Error (MAPE) is considered a standard for examining the quality of the models prediction of energy load, it represent an adequate error measure only when the loss function is linear. Recent studies demonstrated it is not \cite{kalogirou2006artificial}\cite{kajl2000evaluation}. Moreover the percentage error is infinite if there are zero values on the series or frequent intermittent data, and it puts a heavier penalty on positive errors than on negative errors \cite{hyndman2006another}. Because of these disadvantages, this paper only considered the minimization of the Root Mean Square Error (RMSE), which penalize large errors. For every experiment the Mean Absolute Error (MAE) was calculated as well. 
 
 \begin{equation}\operatorname{MAPE}\footnote{MAPE errors will be calculated only on the non-zero values, to avoid the problems described before.}=\frac{1}{n}\sum_{i=1}^{n} \frac{|Y_{i} - \hat{Y_i}|}{Y_{i}} \times 100 \end{equation}
 
@@ -426,13 +459,13 @@ Although most the Mean Absolute Percentage Error (MAPE) is considered a standard
 
 \begin{equation}\operatorname{MAE}=\frac{1}{n}\sum_{i=1}^n \left| \hat{Y_i}-Y_i\right|\end{equation}
 
-\noindent where $\hat{Y}$ is the vector of the $n$ predictions and $Y$ is the vector of the true values.
+The system was tested with synthetic and measured experiments. The first one refers to author generated data, while the latter used the Ebatech dataset. 
 
 
 
 
 \subsection{Synthetic experiments}
-The method is tested with synthetic generated data. Two days outliers were generated by different algorithms. In the first one the real consumption was modified by a random value, simulating the system measurement/control malfunction which makes the consumption bouncing up and down (see \cref{equation:synt1}). The second synthetically created day was created adding $50 m^3$ of gas consumption to the real one, creating a pattern which simulates a strange behaviour and/or a malfunction of the heating system (see \cref{equation:synt2}).
+Two days outliers were synthetically generated by different algorithms. In the first one the real consumption was modified by a random value, simulating the system measurement/control malfunction which makes the consumption bouncing up and down (see \cref{equation:synt1}). The second synthetically created day was created adding $50 m^3$ of gas consumption to the real one, creating a pattern which simulates a strange behaviour and/or a malfunction of the heating system (see \cref{equation:synt2}).
 
 \begin{equation}G(t)= G(t)+v*30\label{equation:synt1} \end{equation}
 where 
@@ -443,7 +476,7 @@ where
 \begin{figure*}
 \centering
 \includegraphics[width=\textwidth]{images/outliersSynt.eps}
-\caption{Outlier detection with synthetic generated data. The circle represents the hours where an outlier is detected.}
+\caption{Outlier detection with synthetically generated data. The circle represents the hours where an outlier is detected.}
 \label{fig:outlierSynt}
 \end{figure*}
 
@@ -452,7 +485,7 @@ The two outliers were correctly detected, as it can be seen in \cref{fig:outlier
 
 
 \subsection{Measured data experiments}
-The method is also tested with measured data, coming from a different type of the day. For example the gas consumption of a week-end was placed in a week-day, simulating a holiday. The purpose of this test was to show that the unusual pattern was detected. In \cref{fig:outlierReal} it can be seen that the outlier mechanism works perfectly when the Sunday gas consumption is placed in a weekday. 
+The first test was done by placing a week-end gas consumption in a business day, in order to simulate an anomaly with real data. In \cref{fig:outlierReal} it can be seen that the outlier mechanism works perfectly when the Sunday gas consumption is placed in a weekday. 
 
 \begin{figure*}
 \centering
@@ -463,14 +496,14 @@ The method is also tested with measured data, coming from a different type of th
 
 The outlier was correctly detected, as it can be seen in \cref{fig:outlierReal}. The robustness of the design was proved with different building, listed in \cref{tab:dataset}.
 
-Excluding this little experiment, some interesting behaviours were found though this work:
-\begin{description}
+Apart this little experiment, some interesting behaviours were found though this work:
+\begin{description}[leftmargin=1pc]
 \itemsep0em
-  \item[Holidays] Regardless of whenever the school was operational, the first tests showed that the Ebatech system was normally heating the buildings (Christmas, in Tuesday 25th of December 2012, was heated like a normal Tuesday even if the building was certainly closed). This causes an avoidable waste.
+  \item[Holidays] Regardless of whenever the school was operational or not, the first tests showed that the Ebatech system was heating the buildings like any other working day. For example Tuesday 25th of December 2012 (Christmas) was heated like a normal business Tuesday even if the building was certainly closed. This causes an avoidable waste.
   \item[Consumption bounces] In \cref{fig:zigzag} a strange zig-zag behaviour can be seen for building 740-NTH. It seems that the system is wasting energy and this shape is totally different from the usual one (\cref{fig:dailyBehaviour}). This lasts for months and it is clear that also the ANN training is affected by this outlier-like behaviour.
 \item[Peaks] Around the initial days of September there is a huge bounce of the consumption (up to three times more than the maximal consumption of the year). Is it a test?
 In building 761-KMH, irregular peaks during April 2013 were found every day, probably when the heating system turns on.
-\item[August with heaters] In building 740-NTH, during August 2009 and August 2011 the heaters were active even with not apparent cold summer.
+\item[August with heaters] In building 740-NTH, during August 2009 and August 2011 the heaters were active even without an apparently cold summer.
 \item[Outliers] Some other outliers are found but they need to be confirmed by the managers, hopefully after the verification of the previously mentioned behaviours.
 \end{description}
 All these problems will be immediately reported to the company.
@@ -482,15 +515,14 @@ All these problems will be immediately reported to the company.
 \label{fig:zigzag}
 \end{figure}
 
-An ANN with the standard cost function MSE was also trained, apparently resulting in a smaller RMSE error in a faster way (\cref{tab:ANNresults}). Although this can be true, the Hybrid MLSE model was more precise, detecting better the possible outliers. They contributed the most to the error.
+An ANN with the standard cost function MSE was also trained, apparently resulting in a smaller RMSE error (\cref{tab:ANNresults}). However, the Hybrid MLSE model was more precise, detecting better the possible outliers. They contributed the most to the error.
 
 In \cref{tab:ANNresults2} the results in the different buildings can be read.
 
 \begin{table}
 \centering
-\label{tab:ANNresults}
 \begin{tabular}{llllll} \hline
-Model     & neurons & epochs \tablefootnote{epochs to converge} & RMSE & MAPE & MAE \\ \hline
+Model     & neurons & epochs & RMSE & MAPE & MAE \\ \hline
 ARIMA\tablefootnote{Calculated iteratively as described in \cref{sec:predictor}}      & - & - & 88.50 & 117.27  & 22.52  \\ 
 ANN         & 80 & 15 & 11.95 & 34.78  & 8.52 \\ 
 HyMSE     & 80 &  70 & 9.4 & 27.66 & 6.90 \\ 
@@ -498,43 +530,44 @@ HyMLSE      & 150 & 140 & 10.02 & 30.05 & 7.26 \\
 \hline
 \end{tabular}
 \caption{Best selected results in building 740-NTH, to compare the ARIMA, ANN and hybrid model. HyMSE is the Hybrid model with MSE cost function, while HyMLSE is the same model with MLSE cost function.}
+\label{tab:ANNresults}
 \end{table}
 
 \begin{table}
 \centering
-\label{tab:ANNresults2}
 \begin{tabular}{llllll} \hline
-Model     & neurons & epochs \tablefootnote{epochs to converge} & RMSE & MAPE & MAE \\ \hline
+Model     & neurons & epochs & RMSE & MAPE & MAE \\ \hline
 740-NTH      & 150 & 140 & 10.02 & 30.05 & 7.26 \\ 
 761-KMH        & 150 & 140 & 2.49 & 18.30 & 1.00 \\ 
 \hline
 \end{tabular}
 \caption{Best selected results for all the buildings.}
+\label{tab:ANNresults2}
 \end{table}
 
 
 \section{Future work}
 \label{sec:future}
 
-ARIMA models can't detect more than one seasonality but it can be helped with Fourier terms and ARIMA \emph{dummy variables} to pro­duce rea­son­able fore­casts. When multi-seasonality is present, an algorithm like TBATS can overpass the ARIMA one, detecting it. This non-parametric model described in \cite{de2011forecasting} could be substituted to the ARIMA one as feature of the ANN. At the moment it is very slow, but it is very recent, so it will be probably improved.
+In this project a holidays list was used but the outlier detection can be improved asking a time-table for the buildings, indicating when these are closed.
 
-The daily pattern could be seen in the transformed Fourier space applying the Modified Discrete Cosine Transform (MDCT) \cite{malvar1992signal}. In theory this could help as well to understand the pattern, but it was only applied once by  \cite{busseti2012deep}, with scarce results.
+ARIMA models can't detect more than one seasonality but it can be helped with Fourier terms and ARIMA \emph{dummy variables} to pro­duce rea­son­able fore­casts. When a multi-seasonality is present, a non-parametric model like TBATS\cite{de2011forecasting} could overpass ARIMA and help further the ANN. This recent algorithm is extremely slow, but it is probable that the performance will be improved soon.
 
-ANNs are sensitive to missing values and irregularities, but it was not possible to contact the buildings managers in order to possibly confirm/identify previously known outliers. For this reason the ANN training was done with not entirely perfect data, and this probably affected the performance. It is necessary to contact these building managers to further help the training of this algorithm. \\
-The input variables were scaled standardizing them to a midrange $0$ and range $[-1, 1]$. It is also possible to normalize them to have mean $0$ and standard deviation $1$. In this case Robust estimates of location and scale are desirable if the inputs contain outliers. Some examples are \cite{iglewicz1983robust} and the recent \cite{mizera2004location} can be the base of a future refine of the ANN inputs.
+ANNs are sensitive to missing values and irregularities, but it was not possible to contact the buildings managers in order to possibly confirm/identify previously known outliers. For this reason the ANN training was done with not entirely clean data, and this probably affected the performance. It is necessary to contact these building managers to further help the training of this algorithm. \\
+The features were scaled standardizing them to the range $[-1, 1]$. It is also possible to normalize them to have mean $0$ and standard deviation $1$. In this case Robust estimates of location and scale are desirable if the inputs contain outliers. \cite{iglewicz1983robust} and the recent \cite{mizera2004location} can be the base of a future refine of the ANN inputs.
 
-In a future work it is possible also to analyse the difference between the MSE and the MLSE cost, not only in the prediction, but also in the outlier detection.
+In a future work it is also possible to analyse the difference between the MSE and the MLSE cost, not only in the prediction, but also in the outlier detection.
 
-Before $2006$, ANN were almost always associated with the \emph{Backpropagation} algorithm and with the 1-hidden layer architecture. The problem with these architectures is that they get stuck in poor local-optima. In 2006 there was a huge breakthrough mainly started by \cite{hinton2006fast}, which is called \emph{Deep learning} and it represent the new fashion of ANNs, based on multi hidden layers and new algorithms. \\
-Future improvements can be based on Recurrent Neural Networks (RNNs) and Restricted Boltzmann Machines (RBMs) which were recently proved to be interesting in time-series forecasting \cite{busseti2012deep, taylor2009factored, sutskever2013training}. The \emph{Pylearn2} \cite{goodfellow2013pylearn2} RNN framework is under development.
+Before $2006$, ANNs were almost always associated with the \emph{Backpropagation} algorithm and with the 1-hidden layer architecture. The problem with these architectures is that they get stuck in poor local-optima. In 2006 there was a huge breakthrough, mainly started by \cite{hinton2006fast}, which is called \emph{Deep learning} and it represent the new fashion of ANNs, based on multi hidden layers and new algorithms. Future improvements can be based on Recurrent Neural Networks (RNNs) and Restricted Boltzmann Machines (RBMs) which were recently proved to be interesting in time-series forecasting \cite{busseti2012deep, taylor2009factored, sutskever2013training}.
 
 
 
 \section{Conclusion}
+\label{sec:conclusion}
 
+Any model can't accurately treat all the situations for a large amount of historical load data. The irregular fluctuation of the gas consumption was hardly predictable, consequently the ANN model was helped with robust cost function and with the well known ARIMA model. Although other papers presented similar models to forecast electric consumption, the hybrid model presented here is almost unique because it focuses on short-term gas consumption forecast, which are very irregular and not easily predictable with classic methods. Since the prediction is very accurate (with RMSE from $8$ $m^3$ in building 740-NTH, to RMSE $2.5$ $m^3$ in building 761-KMH), the outlier mechanism is able to easily detect strange behaviours without the need to possess previous examples of outliers. The scope of this paper was forecasting the highly irregular gas consumption time-series, but it is believed that similar results could be also obtained with the more regular electric consumption time-series. 
 
-
-Any model can't be treating accurately all the situations for a large amount of historical load data. The irregular fluctuation of the gas consumption was hardly predictable, for this reason the ANN model was helped with robust cost function and with the well known ARIMA model. Although other papers presented similar models to forecast electric consumption, the hybrid model presented here, is almost unique because it focuses to forecast short-term gas consumption, which are very irregular and not easily predictable with classic methods. Since the predictor is very accurate (with RMSE from $8$ $m^3$ in building 740-NTH, to RMSE $2.5$ $m^3$ in building 761-KMH), the outlier mechanism is able to easily detect strange behaviours defining a threshold value in the confidence interval without the need to possess previous examples of outliers. The scope of this paper was forecasting the highly irregular gas consumption time-series, but it is believed that similar results could be also obtained with electric consumption time-series. It is hoped that this could lead to new analysis of the energy consumption in public buildings.
+It is hoped that this work would lead to new analysis of the energy consumption in public buildings.
 %\vfill
 
 %\end{document}  % This is where a 'short' article might terminate
@@ -542,7 +575,7 @@ Any model can't be treating accurately all the situations for a large amount of 
 
 %ACKNOWLEDGMENTS are optional
 \section{Acknowledgments}
-This internship was economically supported by Universita' degli studi di Trento. I also thank Jesse Eisses who through his work helped me to find some interesting ideas for this paper.
+This internship was economically supported by Universita' degli Studi di Trento. I also thank Jesse Eisses who helped me to find some interesting ideas for this paper.
 
 %
 % The following two commands are all you need in the
@@ -561,9 +594,7 @@ This internship was economically supported by Universita' degli studi di Trento.
 \appendix
 %Appendix A
 \section{Sources}
-``Very often scientific studies rely on complex textual explanations of what has been done to analyse the data that can overwhelm the reader that has to accept them as an act of faith", as stated in \cite{reproducibility}. To avoid this, the author provides all the sources through this website: \url{https://github.com/denadai2/energyUva}. Some sources are also available for the popular Pybrain \cite{schaul2010} library.
-
-The raw data are protected by privacy of the Hogeschool van Amsterdam. The Universiteit van Amsterdam is working to make them available to achieve total reproducibility.
+``Very often scientific studies rely on complex textual explanations of what has been done to analyse the data that can overwhelm the reader that has to accept them as an act of faith"\footnote{\url{http://labs.biblioteca.uoc.edu/blog/?p=4332}}. To avoid this, the author provides all the sources\footnote{\url{https://github.com/denadai2/energyUva}}, while the raw data are protected by privacy of the Hogeschool van Amsterdam. The Universiteit van Amsterdam is working to make them available to achieve total reproducibility.
 
 %\balancecolumns
 
