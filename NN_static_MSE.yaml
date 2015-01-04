@@ -16,7 +16,7 @@
                      dim: 1
                  }
                 ],
-        nvis: 15,
+        nvis: 29,
     },
     algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
         batch_size: 10,
@@ -29,7 +29,7 @@
                             },
             },
         termination_criterion: !obj:pylearn2.termination_criteria.EpochCounter {
-            max_epochs: 70
+            max_epochs: 150
         }
     },
     extensions: [

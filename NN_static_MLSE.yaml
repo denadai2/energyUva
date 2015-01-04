@@ -13,14 +13,15 @@
                  !obj:pylearn2.models.mlp.Linear {
                      layer_name: 'y',
                      sparse_init: 1,
-                     dim: 1
+                     dim: 1,
+                     loss_function: 'MLSE'
                  }
                 ],
-        nvis: 25,
+        nvis: 29,
     },
     algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
         batch_size: 10,
-        learning_rate: .003,
+        learning_rate: .002,
         learning_rule: !obj:pylearn2.training_algorithms.learning_rule.Momentum {
             init_momentum: .05
         },
@@ -32,7 +33,7 @@
                             },
             },
         termination_criterion: !obj:pylearn2.termination_criteria.EpochCounter {
-            max_epochs: 140
+            max_epochs: 150
         }
     },
     extensions: [
