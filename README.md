@@ -7,15 +7,15 @@ The results are described in this [page](http://www.marcodena.it/blog/detecting-
 
 ## Instructions
 
-* Clone [this](https://github.com/denadai2/pylearn2/tree/UVA) pylearn2 branch, which includes the MSLE cost function
+* Clone [this](https://github.com/lisa-lab/pylearn2/tree/08a4e4ab9d80eb1a7a83d91e64fd8d512d3d7e7c) pylearn2, which uses the exact pylearn2 version we used.
 * Install the cloned pylearn2
 
 ## Commands
 To train your model you can use
 
-    python [PYLEARN_DIR]/pylearn2/scripts/train.py NN_static_MLSE.yaml 
+    python [PYLEARN_DIR]/pylearn2/scripts/train.py NN-cross_v2.yaml
 
 To predict
 
-    python [PYLEARN_DIR]/pylearn2/scripts/mlp/predict_csv.py best.pkl test.csv predict.csv -P 'regression'
+    python [PYLEARN_DIR]/pylearn2/scripts/mlp/predict_csv.py bests/bestv2-0.pkl test.csv predict.csv -P 'regression'
 

@@ -1,0 +1,51 @@
+!obj:pylearn2.cross_validation.TrainCV {
+    dataset_iterator: !obj:pylearn2.cross_validation.dataset_iterators.DatasetKFold {
+        dataset: !obj:pylearn2.datasets.csv_dataset.CSVDataset {
+            path: 'trainCV.csv'
+        },
+        n_folds: 2
+    },
+    model: !obj:pylearn2.models.mlp.MLP {
+        layers: [
+                 !obj:pylearn2.models.mlp.RectifiedLinear {
+                     layer_name: 'h0',
+                     dim: 60,
+                     sparse_init: 1,
+                     use_bias: True
+                 },
+                 !obj:pylearn2.models.mlp.Linear {
+                     layer_name: 'y',
+                     sparse_init: 1,
+                     dim: 1,
+                     use_abs_loss: True
+                 }
+                ],
+        nvis: 21,
+    },
+    algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
+        cost: !obj:pylearn2.costs.cost.SumOfCosts { costs: [
+            !obj:pylearn2.costs.mlp.Default {}, 
+            !obj:pylearn2.costs.mlp.WeightDecay {
+                coeffs: [ .00005, .00005 ]
+                }
+            ]
+            },
+        batch_size: 50,
+        learning_rate: .005,
+        learning_rule: !obj:pylearn2.training_algorithms.learning_rule.Momentum {
+            init_momentum: .4
+        },
+        termination_criterion: !obj:pylearn2.termination_criteria.EpochCounter {
+            max_epochs: 50
+        },
+    },
+    cv_extensions: [
+        !obj:pylearn2.cross_validation.train_cv_extensions.MonitorBasedSaveBestCV {
+            channel_name: test_objective,
+            save_path: 'bests/best_v2.pkl',
+            save_folds: True
+            },
+    ],
+    save_path: "softmax_regression_v2.pkl",
+    save_freq: 1
+}

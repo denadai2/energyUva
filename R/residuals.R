@@ -3,7 +3,7 @@ library(xts)
 library(forecast)
 Sys.setenv(TZ = "GMT")
 fmt <- '%Y-%m-%d %H:%M:%S'
-dat <- read.zoo('../datasets/740-NTH_elektriciteit_withWeather_clean.csv', tz='GMT', format=fmt, header=TRUE, sep=',', stringsAsFactors=FALSE, index.column=9)
+dat <- read.zoo('../datasets/740-NTH_elektriciteit_withWeather_clean.csv', tz='GMT', format=fmt, header=TRUE, sep=',', stringsAsFactors=FALSE, index.column=1)
 dat.xts <- as.xts(dat$gas..m3.)
 dat.xts <- dat.xts["/2014-03-31 00:00"]
 
